@@ -49,7 +49,7 @@ let extend = (src, dest, list, params = {}, prefix = '')=>{
 };
 
 module.exports = {
-	name: '_muse-meta',
+	name: 'not-meta',
 	Route,
 	Model,
 	extend,
