@@ -160,8 +160,7 @@ exports.get_update = function(input){
 		delete req.body.__versions;
 		//console.log('id',id);
 		thisModel.findOneAndUpdate({
-			_id: id,
-			__latest: true
+			_id: id
 		},
 		thisModel.sanitizeInput(req.body)
 		).exec()
@@ -177,7 +176,7 @@ exports.get_update = function(input){
 				res.status(200).json(item);
 			})
 			.catch((err)=>{
-				log.error('-version not saved ', err);
+				log.error('-version not saved ');
 				log.error(err);
 				res.status(500).json({});
 			});
