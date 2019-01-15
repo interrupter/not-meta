@@ -66,7 +66,8 @@ exports.get_listAndCount = function (input){
 			populate = [''];
 		if (input.populate &&
 			input.populate.hasOwnProperty(input.ACTION_NAME) &&
-			Array.isArray(input.populate[input.ACTION_NAME])) {
+			Array.isArray(input.populate[input.ACTION_NAME])
+		) {
 			populate = input.populate[input.ACTION_NAME];
 		}
 		thisModel.listAndCount(skip, size, sorter, filter, search, populate)
@@ -154,46 +155,88 @@ exports.get_getRaw = function(input){
 exports.get_update = function(input){
 	return function (req, res) {
 		let id = req.params._id,
+			thisModelFile = notNode.Application.getModelFile(input.MODEL_NAME),
 			thisModel = notNode.Application.getModel(input.MODEL_NAME);
 		//console.log('update', id, req.params, req.body);
 		delete req.body._id;
 		delete req.body.__versions;
-		//console.log('id',id);
-		thisModel.findOneAndUpdate({
-			_id: id
-		},
-		thisModel.sanitizeInput(req.body)
-		).exec()
-			.then(thisModel.findById(id).exec())
-			.then((item)=>{
-				if (typeof item !== 'undefined' && item !== null) {
-					return thisModel.saveVersion(item._id);
-				} else {
-					throw new notError('-version not saved, empty response', {id,item});
-				}
-			})
-			.then((item)=>{
-				res.status(200).json(item);
-			})
-			.catch((err)=>{
-				log.error('-version not saved ');
-				log.error(err);
-				res.status(500).json({});
-			});
+		if(thisModelFile.enrich.versioning){
+			//console.log('id',id);
+			thisModel.findOneAndUpdate({
+				_id: id,
+				__latest: true,
+				__closed: false
+			},
+			thisModel.sanitizeInput(req.body)
+			).exec()
+				.then(thisModel.findById(id).exec())
+				.then((item)=>{
+					if (typeof item !== 'undefined' && item !== null) {
+						return thisModel.saveVersion(item._id);
+					} else {
+						throw new notError('-version not saved, empty response', {id,item});
+					}
+				})
+				.then((item)=>{
+					res.status(200).json(item);
+				})
+				.catch((err)=>{
+					log.error('-version not saved ');
+					log.error(err);
+					res.status(500).json({});
+				});
+		}else{
+			//console.log('id',id);
+			thisModel.findOneAndUpdate({
+				_id: id
+			},
+			thisModel.sanitizeInput(req.body)
+			).exec()
+				.then((item)=>{
+					res.status(200).json(item);
+				})
+				.catch((err)=>{
+					log.error('-version not saved ');
+					log.error(err);
+					res.status(500).json({});
+				});
+		}
+
 	};
 };
 
 exports.get_delete = function(input){
 	return function (req, res) {
 		let id = req.params._id,
+			thisModelFile = notNode.Application.getModelFile(input.MODEL_NAME),
 			thisModel = notNode.Application.getModel(input.MODEL_NAME);
-		thisModel.findByIdAndRemove(id).exec()
-			.then(()=>{
-				res.status(200).json({});
-			})
-			.catch((err)=>{
-				log.error(err);
-				res.status(500).json({});
-			});
+		if(thisModelFile.enrich.versioning){
+			thisModel.findOneAndUpdate(
+				{
+					_id: id,
+					__latest: true,
+					__closed: false
+				},
+				{
+					__closed: true
+				}
+			).exec()
+				.then(()=>{
+					res.status(200).json({});
+				})
+				.catch((err)=>{
+					log.error(err);
+					res.status(500).json({});
+				});
+		}else{
+			thisModel.findByIdAndRemove(id).exec()
+				.then(()=>{
+					res.status(200).json({});
+				})
+				.catch((err)=>{
+					log.error(err);
+					res.status(500).json({});
+				});
+		}
 	};
 };

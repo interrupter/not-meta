@@ -41,8 +41,8 @@ let extend = (src, dest, list, params = {}, prefix = '')=>{
 		for(let name of list){
 			let fac = src[NAME_PREFIX + name];
 			if((typeof fac!=='undefined') && (fac !== null)){
-				params.ACTION_NAME = name;
-				dest[prefix + name] = withBefore(name, params, fac(params));
+				let paramsCopy = Object.assign({ACTION_NAME: name}, params);
+				dest[prefix + name] = withBefore(name, params, fac(paramsCopy));
 			}
 		}
 	}
