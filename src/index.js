@@ -3,7 +3,7 @@ const BEFORE_ACTION = 'before';
 const Route = require('./meta/_route.js');
 const Model = require('./meta/_model.js');
 const notError = require('not-error');
-const log = require('not-log')(module);
+const App = require('not-node').Application;
 
 /**
 *	Если есть специфические действия перед обработчиком, то мы их запускаем первыми
@@ -20,7 +20,7 @@ let withBefore = function(name, input, funct){
 				})
 				.catch((err)=>{
 					let e = ((new notError(err.message)).adopt(err));
-					log.report(e);
+					App.reporter.report(e);
 				});
 		};
 	}else{

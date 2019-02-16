@@ -1,8 +1,10 @@
-const log = require('not-log')(module),
-	query = require('not-filter'),
+const query = require('not-filter'),
 	notError = require('not-error'),
 	common = require('not-node').Common,
-	notNode = require('not-node');
+	notNode = require('not-node'),
+	App = notNode.Application,
+	log = App.logger,
+	reporter = App.reporter;
 
 exports.get_list = function(input){
 	return function (req, res) {
@@ -14,7 +16,7 @@ exports.get_list = function(input){
 				res.json(items);
 			})
 			.catch((err)=>{
-				log.error(err);
+				reporter.report(err);
 				res.status(500).json({});
 			});
 	};
@@ -27,7 +29,10 @@ exports.get_listAll = function(input){
 			.then(function (items) {
 				res.json(items);
 			})
-			.catch(log.error);
+			.catch((err)=>{
+				reporter.report(err);
+				res.status(500).end();
+			});
 	};
 };
 
@@ -43,8 +48,8 @@ exports.get_count = function(input){
 				});
 			})
 			.catch((err)=>{
+				reporter.report(err);
 				res.status(500).end();
-				log.error(err);
 			});
 	};
 };
@@ -76,7 +81,7 @@ exports.get_listAndCount = function (input){
 				res.status(200).json(result);
 			})
 			.catch((err)=>{
-				log.error(err);
+				reporter.report(err);
 				res.status(500).json({});
 			});
 	};
@@ -93,8 +98,8 @@ exports.get_create = function(input){
 				res.status(200).json(item);
 			})
 			.catch((e) => {
-				res.status(500).json(e);
-				log.error(e);
+				reporter.report(e);
+				res.status(500).json({});
 			});
 	};
 };
@@ -111,7 +116,7 @@ exports.get_get = function(input){
 				res.status(200).json(item);
 			})
 			.catch((err) => {
-				log.error(id, err);
+				reporter.report(new notError('Error', {id}, err));
 				res.status(500).json({});
 			});
 	};
@@ -131,7 +136,7 @@ exports.get_getById = function(input){
 				res.status(200).json(variant);
 			})
 			.catch((err)=>{
-				log.error(err);
+				reporter.report(err);
 				res.status(500).json({});
 			});
 	};
@@ -146,7 +151,7 @@ exports.get_getRaw = function(input){
 				res.status(200).json(item);
 			})
 			.catch((err)=>{
-				log.error(err);
+				reporter.report(err);
 				res.status(500).json({});
 			});
 	};
@@ -181,8 +186,7 @@ exports.get_update = function(input){
 					res.status(200).json(item);
 				})
 				.catch((err)=>{
-					log.error('-version not saved ');
-					log.error(err);
+					reporter.report(err);
 					res.status(500).json({});
 				});
 		}else{
@@ -196,8 +200,7 @@ exports.get_update = function(input){
 					res.status(200).json(item);
 				})
 				.catch((err)=>{
-					log.error('-version not saved ');
-					log.error(err);
+					reporter.report(err);
 					res.status(500).json({});
 				});
 		}
@@ -225,7 +228,7 @@ exports.get_delete = function(input){
 					res.status(200).json({});
 				})
 				.catch((err)=>{
-					log.error(err);
+					reporter.report(err);
 					res.status(500).json({});
 				});
 		}else{
@@ -234,7 +237,7 @@ exports.get_delete = function(input){
 					res.status(200).json({});
 				})
 				.catch((err)=>{
-					log.error(err);
+					reporter.report(err);
 					res.status(500).json({});
 				});
 		}
