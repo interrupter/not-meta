@@ -3,7 +3,6 @@ const query = require('not-filter'),
 	common = require('not-node').Common,
 	notNode = require('not-node'),
 	App = notNode.Application,
-	log = App.logger,
 	reporter = App.reporter;
 
 exports.get_list = function(input){
@@ -162,11 +161,9 @@ exports.get_update = function(input){
 		let id = req.params._id,
 			thisModelFile = notNode.Application.getModelFile(input.MODEL_NAME),
 			thisModel = notNode.Application.getModel(input.MODEL_NAME);
-		//console.log('update', id, req.params, req.body);
 		delete req.body._id;
 		delete req.body.__versions;
 		if(thisModelFile.enrich.versioning){
-			//console.log('id',id);
 			thisModel.findOneAndUpdate({
 				_id: id,
 				__latest: true,
@@ -189,8 +186,7 @@ exports.get_update = function(input){
 					reporter.report(err);
 					res.status(500).json({});
 				});
-		}else{
-			//console.log('id',id);
+		}else{			
 			thisModel.findOneAndUpdate({
 				_id: id
 			},
