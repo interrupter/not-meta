@@ -163,7 +163,7 @@ exports.get_update = function(input){
 			thisModel = notNode.Application.getModel(input.MODEL_NAME);
 		delete req.body._id;
 		delete req.body.__versions;
-		if(thisModelFile.enrich.versioning){
+		if(thisModelFile.enrich && thisModelFile.enrich.versioning){
 			thisModel.findOneAndUpdate({
 				_id: id,
 				__latest: true,
@@ -186,7 +186,7 @@ exports.get_update = function(input){
 					reporter.report(err);
 					res.status(500).json({});
 				});
-		}else{			
+		}else{
 			thisModel.findOneAndUpdate({
 				_id: id
 			},
@@ -209,7 +209,7 @@ exports.get_delete = function(input){
 		let id = req.params._id,
 			thisModelFile = notNode.Application.getModelFile(input.MODEL_NAME),
 			thisModel = notNode.Application.getModel(input.MODEL_NAME);
-		if(thisModelFile.enrich.versioning){
+		if(thisModelFile.enrich && thisModelFile.enrich.versioning){
 			thisModel.findOneAndUpdate(
 				{
 					_id: id,
