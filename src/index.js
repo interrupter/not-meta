@@ -2,7 +2,7 @@ const NAME_PREFIX = 'get_';
 const BEFORE_ACTION = 'before';
 const Route = require('./meta/_route.js');
 const Model = require('./meta/_model.js');
-const notError = require('not-error');
+const notError = require('not-error').notError;
 const App = require('not-node').Application;
 
 /**
