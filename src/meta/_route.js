@@ -2,8 +2,7 @@ const query = require('not-filter'),
 	notError = require('not-error'),
 	common = require('not-node').Common,
 	notNode = require('not-node'),
-	App = notNode.Application,
-	reporter = App.reporter;
+	App = notNode.Application;
 
 exports.get_list = function(input){
 	return function (req, res) {
@@ -15,7 +14,7 @@ exports.get_list = function(input){
 				res.json(items);
 			})
 			.catch((err)=>{
-				reporter.report(err);
+				App.report(err);
 				res.status(500).json({});
 			});
 	};
@@ -29,7 +28,7 @@ exports.get_listAll = function(input){
 				res.json(items);
 			})
 			.catch((err)=>{
-				reporter.report(err);
+				App.report(err);
 				res.status(500).end();
 			});
 	};
@@ -47,7 +46,7 @@ exports.get_count = function(input){
 				});
 			})
 			.catch((err)=>{
-				reporter.report(err);
+				App.report(err);
 				res.status(500).end();
 			});
 	};
@@ -80,7 +79,7 @@ exports.get_listAndCount = function (input){
 				res.status(200).json(result);
 			})
 			.catch((err)=>{
-				reporter.report(err);
+				App.report(err);
 				res.status(500).json({});
 			});
 	};
@@ -97,7 +96,7 @@ exports.get_create = function(input){
 				res.status(200).json(item);
 			})
 			.catch((e) => {
-				reporter.report(e);
+				App.report(e);
 				res.status(500).json({});
 			});
 	};
@@ -115,7 +114,7 @@ exports.get_get = function(input){
 				res.status(200).json(item);
 			})
 			.catch((err) => {
-				reporter.report(new notError('Error', {id}, err));
+				App.report(new notError('Error', {id}, err));
 				res.status(500).json({});
 			});
 	};
@@ -135,7 +134,7 @@ exports.get_getById = function(input){
 				res.status(200).json(variant);
 			})
 			.catch((err)=>{
-				reporter.report(err);
+				App.report(err);
 				res.status(500).json({});
 			});
 	};
@@ -150,7 +149,7 @@ exports.get_getRaw = function(input){
 				res.status(200).json(item);
 			})
 			.catch((err)=>{
-				reporter.report(err);
+				App.report(err);
 				res.status(500).json({});
 			});
 	};
@@ -183,7 +182,7 @@ exports.get_update = function(input){
 					res.status(200).json(item);
 				})
 				.catch((err)=>{
-					reporter.report(err);
+					App.report(err);
 					res.status(500).json({});
 				});
 		}else{
@@ -196,7 +195,7 @@ exports.get_update = function(input){
 					res.status(200).json(item);
 				})
 				.catch((err)=>{
-					reporter.report(err);
+					App.report(err);
 					res.status(500).json({});
 				});
 		}
@@ -224,7 +223,7 @@ exports.get_delete = function(input){
 					res.status(200).json({});
 				})
 				.catch((err)=>{
-					reporter.report(err);
+					App.report(err);
 					res.status(500).json({});
 				});
 		}else{
@@ -233,7 +232,7 @@ exports.get_delete = function(input){
 					res.status(200).json({});
 				})
 				.catch((err)=>{
-					reporter.report(err);
+					App.report(err);
 					res.status(500).json({});
 				});
 		}
