@@ -10,8 +10,18 @@ exports.get_list = function(input){
 			thisModel = notNode.Application.getModel(input.MODEL_NAME),
 			thisSchema = notNode.Application.getModelSchema(input.MODEL_NAME);
 		thisModel.list(skip, size, query.sorter.process(req, thisSchema), query.filter.process(req, thisSchema))
-			.then(function(items){
-				res.json(items);
+			.then((items) => {
+				if(input.RESPONSE
+						&& Array.isArray(input.RESPONSE.full)
+						&& input.RESPONSE.full.indexOf(input.ACTION_NAME) > -1
+					){
+					res.status(200).json({
+						status: 'ok',
+						result: items
+					});
+				}else{
+					res.status(200).json(items);
+				}
 			})
 			.catch((err)=>{
 				App.report(err);
@@ -25,7 +35,17 @@ exports.get_listAll = function(input){
 		let thisModel = notNode.Application.getModel(input.MODEL_NAME);
 		thisModel.listAll()
 			.then(function (items) {
-				res.json(items);
+				if(input.RESPONSE
+						&& Array.isArray(input.RESPONSE.full)
+						&& input.RESPONSE.full.indexOf(input.ACTION_NAME) > -1
+					){
+					res.status(200).json({
+						status: 'ok',
+						result: items
+					});
+				}else{
+					res.status(200).json(items);
+				}
 			})
 			.catch((err)=>{
 				App.report(err);
@@ -41,9 +61,19 @@ exports.get_count = function(input){
 			filter = query.filter.process(req, thisSchema);
 		thisModel.countWithFilter(query.filter.modifyRules(filter, {	__latest: true}))
 			.then((count)=>{
-				res.json({
-					count: count
-				});
+				if(input.RESPONSE
+						&& Array.isArray(input.RESPONSE.full)
+						&& input.RESPONSE.full.indexOf(input.ACTION_NAME) > -1
+					){
+					res.status(200).json({
+						status: 'ok',
+						result: {count}
+					});
+				}else{
+					res.status(200).json({
+						count: count
+					});
+				}
 			})
 			.catch((err)=>{
 				App.report(err);
@@ -76,11 +106,21 @@ exports.get_listAndCount = function (input){
 		thisModel.listAndCount(skip, size, sorter, filter, search, populate)
 			.then((result)=>{
 				query.return.process(req, thisSchema, result.list);
-				res.status(200).json(result);
+				if(input.RESPONSE
+						&& Array.isArray(input.RESPONSE.full)
+						&& input.RESPONSE.full.indexOf(input.ACTION_NAME) > -1
+					){
+					res.status(200).json({
+						status: 'ok',
+						result
+					});
+				}else{
+					res.status(200).json(result);
+				}
 			})
 			.catch((err)=>{
 				App.report(err);
-				res.status(500).json({});
+				res.status(500).json({status: 'error'});
 			});
 	};
 };
@@ -93,11 +133,21 @@ exports.get_create = function(input){
 		delete data._id;
 		thisModel.add(data)
 			.then((item) => {
-				res.status(200).json(item);
+				if(input.RESPONSE
+						&& Array.isArray(input.RESPONSE.full)
+						&& input.RESPONSE.full.indexOf(input.ACTION_NAME) > -1
+					){
+					res.status(200).json({
+						status: 'ok',
+						result: item
+					});
+				}else{
+					res.status(200).json(item);
+				}
 			})
 			.catch((e) => {
 				App.report(e);
-				res.status(500).json({});
+				res.status(500).json({status: 'error'});
 			});
 	};
 };
@@ -111,11 +161,21 @@ exports.get_get = function(input){
 				if (input.after && input.after[input.ACTION_NAME]){
 					input.after[input.ACTION_NAME](item);
 				}
-				res.status(200).json(item);
+				if( input.RESPONSE
+						&& Array.isArray(input.RESPONSE.full)
+						&& input.RESPONSE.full.indexOf(input.ACTION_NAME) > -1
+					){
+					res.status(200).json({
+						status: 'ok',
+						result: item
+					});
+				}else{
+					res.status(200).json(item);
+				}
 			})
 			.catch((err) => {
 				App.report(new notError('Error', {id}, err));
-				res.status(500).json({});
+				res.status(500).json({status: 'error'});
 			});
 	};
 };
@@ -126,16 +186,26 @@ exports.get_getById = function(input){
 			thisModel = notNode.Application.getModel(input.MODEL_NAME);
 		thisModel.getOneByID(id)
 			.then((item)=>{
-				var variant = item.getVariant();
+				let variant = item.getVariant();
 				if (input.hasOwnProperty('MODEL_TITLE')){
 					variant.option = common.firstLetterToLower(input.MODEL_NAME);
 					variant.optionTitle = input.MODEL_TITLE;
 				}
-				res.status(200).json(variant);
+				if(input.RESPONSE
+						&& Array.isArray(input.RESPONSE.full)
+						&& input.RESPONSE.full.indexOf(input.ACTION_NAME) > -1
+					){
+					res.status(200).json({
+						status: 'ok',
+						result: variant
+					});
+				}else{
+					res.status(200).json(variant);
+				}
 			})
 			.catch((err)=>{
 				App.report(err);
-				res.status(500).json({});
+				res.status(500).json({status: 'error'});
 			});
 	};
 };
@@ -146,7 +216,17 @@ exports.get_getRaw = function(input){
 			thisModel = notNode.Application.getModel(input.MODEL_NAME);
 		thisModel.getOneRaw(id)
 			.then((item)=>{
-				res.status(200).json(item);
+				if(input.RESPONSE
+						&& Array.isArray(input.RESPONSE.full)
+						&& input.RESPONSE.full.indexOf(input.ACTION_NAME) > -1
+					){
+					res.status(200).json({
+						status: 'ok',
+						result: item
+					});
+				}else{
+					res.status(200).json(item);
+				}
 			})
 			.catch((err)=>{
 				App.report(err);
@@ -179,7 +259,17 @@ exports.get_update = function(input){
 					}
 				})
 				.then((item)=>{
-					res.status(200).json(item);
+					if(input.RESPONSE
+							&& Array.isArray(input.RESPONSE.full)
+							&& input.RESPONSE.full.indexOf(input.ACTION_NAME) > -1
+						){
+						res.status(200).json({
+							status: 'ok',
+							result: item
+						});
+					}else{
+						res.status(200).json(item);
+					}
 				})
 				.catch((err)=>{
 					App.report(err);
@@ -192,7 +282,17 @@ exports.get_update = function(input){
 			thisModel.sanitizeInput(req.body)
 			).exec()
 				.then((item)=>{
-					res.status(200).json(item);
+					if(input.RESPONSE
+							&& Array.isArray(input.RESPONSE.full)
+							&& input.RESPONSE.full.indexOf(input.ACTION_NAME) > -1
+						){
+						res.status(200).json({
+							status: 'ok',
+							result: item
+						});
+					}else{
+						res.status(200).json(item);
+					}
 				})
 				.catch((err)=>{
 					App.report(err);
@@ -220,7 +320,16 @@ exports.get_delete = function(input){
 				}
 			).exec()
 				.then(()=>{
-					res.status(200).json({});
+					if(input.RESPONSE
+							&& Array.isArray(input.RESPONSE.full)
+							&& input.RESPONSE.full.indexOf(input.ACTION_NAME) > -1
+						){
+						res.status(200).json({
+							status: 'ok'
+						});
+					}else{
+						res.status(200).json({});
+					}
 				})
 				.catch((err)=>{
 					App.report(err);
@@ -229,7 +338,16 @@ exports.get_delete = function(input){
 		}else{
 			thisModel.findByIdAndRemove(id).exec()
 				.then(()=>{
-					res.status(200).json({});
+					if(input.RESPONSE
+							&& Array.isArray(input.RESPONSE.full)
+							&& input.RESPONSE.full.indexOf(input.ACTION_NAME) > -1
+						){
+						res.status(200).json({
+							status: 'ok'
+						});
+					}else{
+						res.status(200).json({});
+					}
 				})
 				.catch((err)=>{
 					App.report(err);
