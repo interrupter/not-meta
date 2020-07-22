@@ -1,5 +1,5 @@
 const query = require('not-filter'),
-	notError = require('not-error'),
+	notError = require('not-error').notError,
 	common = require('not-node').Common,
 	notNode = require('not-node'),
 	App = notNode.Application;
