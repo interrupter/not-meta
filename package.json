@@ -1,6 +1,6 @@
 {
 	"name": "not-meta",
-	"version": "0.0.16",
+	"version": "0.0.17",
 	"description": "not-* family meta layer for model and route",
 	"main": "index.js",
 	"scripts": {
