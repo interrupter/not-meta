@@ -4,38 +4,81 @@ const query = require('not-filter'),
 	notNode = require('not-node'),
 	App = notNode.Application;
 
+async function postProcess({
+	beforeResponse,
+	ACTION_NAME
+}, result) {
+	if (beforeResponse &&
+		Object.prototype.hasOwnProperty.call(beforeResponse, ACTION_NAME) &&
+		typeof beforeResponse[ACTION_NAME] === 'function'
+	) {
+		if (beforeResponse[ACTION_NAME].constructor.name === 'AsyncFunction') {
+			result = await beforeResponse[ACTION_NAME](result);
+		} else {
+			result = beforeResponse[ACTION_NAME](result);
+		}
+	}
+	return result;
+}
+
+function returnResults({
+	RESPONSE,
+	ACTION_NAME
+}, res, result) {
+	if (RESPONSE && Array.isArray(RESPONSE.full) && RESPONSE.full.indexOf(ACTION_NAME) > -1) {
+		let msg = {
+			status: 'ok'
+		};
+		if (typeof result !== 'undefined') {
+			msg.result = result;
+		}
+		res.status(200).json(result);
+	} else {
+		if (typeof result === 'undefined') {
+			result = {};
+		}
+		res.status(200).json(result);
+	}
+}
+
+function getResultPresenter(input, res) {
+	return async (result) => {
+		result = await postProcess(input, result);
+		returnResults(input, res, result);
+	};
+}
+
+function getErrorPresenter(req, res, {
+	MODEL_NAME,
+	ACTION_NAME
+}, opts = {}) {
+	return (err) => {
+		App.report(
+			new notError(`meta-route for ${MODEL_NAME}.${ACTION_NAME}`, {
+				MODEL_NAME,
+				ACTION_NAME,
+				...opts
+			},
+			err)
+		);
+		res.status(500).json({});
+	};
+}
+
 exports.get_list = function(input) {
 	return function(req, res) {
 		let {
-			size,
-			skip
-		} = query.pager.process(req),
+				size,
+				skip
+			} = query.pager.process(req),
 			thisModel = notNode.Application.getModel(input.MODEL_NAME),
 			thisSchema = notNode.Application.getModelSchema(input.MODEL_NAME);
 		thisModel.list(skip, size, query.sorter.process(req, thisSchema), query.filter.process(req, thisSchema))
-			.then((items) => {
-				if (input.beforeResponse &&
-					Object.prototype.hasOwnProperty.call(input.beforeResponse, input.ACTION_NAME) &&
-					typeof input.beforeResponse[input.ACTION_NAME] === 'function'
-				) {
-					items = input.beforeResponse[input.ACTION_NAME](items);
-				}
-				if (input.RESPONSE &&
-					Array.isArray(input.RESPONSE.full) &&
-					input.RESPONSE.full.indexOf(input.ACTION_NAME) > -1
-				) {
-					res.status(200).json({
-						status: 'ok',
-						result: items
-					});
-				} else {
-					res.status(200).json(items);
-				}
-			})
-			.catch((err) => {
-				App.report(err);
-				res.status(500).json({});
-			});
+			.then(getResultPresenter(input, res))
+			.catch(getErrorPresenter(req, res, input, {
+				size,
+				skip
+			}));
 	};
 };
 
@@ -43,29 +86,8 @@ exports.get_listAll = function(input) {
 	return function(req, res) {
 		let thisModel = notNode.Application.getModel(input.MODEL_NAME);
 		thisModel.listAll()
-			.then(function(items) {
-				if (input.beforeResponse &&
-					Object.prototype.hasOwnProperty.call(input.beforeResponse, input.ACTION_NAME) &&
-					typeof input.beforeResponse[input.ACTION_NAME] === 'function'
-				) {
-					items = input.beforeResponse[input.ACTION_NAME](items);
-				}
-				if (input.RESPONSE &&
-					Array.isArray(input.RESPONSE.full) &&
-					input.RESPONSE.full.indexOf(input.ACTION_NAME) > -1
-				) {
-					res.status(200).json({
-						status: 'ok',
-						result: items
-					});
-				} else {
-					res.status(200).json(items);
-				}
-			})
-			.catch((err) => {
-				App.report(err);
-				res.status(500).end();
-			});
+			.then(getResultPresenter(input, res))
+			.catch(getErrorPresenter(req, res, input));
 	};
 };
 
@@ -75,35 +97,10 @@ exports.get_count = function(input) {
 			thisSchema = notNode.Application.getModelSchema(input.MODEL_NAME),
 			filter = query.filter.process(req, thisSchema);
 		thisModel.countWithFilter(query.filter.modifyRules(filter, {
-				__latest: true
-			}))
-			.then((count) => {
-				if (input.beforeResponse &&
-					Object.prototype.hasOwnProperty.call(input.beforeResponse, input.ACTION_NAME) &&
-					typeof input.beforeResponse[input.ACTION_NAME] === 'function'
-				) {
-					count = input.beforeResponse[input.ACTION_NAME](count);
-				}
-				if (input.RESPONSE &&
-					Array.isArray(input.RESPONSE.full) &&
-					input.RESPONSE.full.indexOf(input.ACTION_NAME) > -1
-				) {
-					res.status(200).json({
-						status: 'ok',
-						result: {
-							count
-						}
-					});
-				} else {
-					res.status(200).json({
-						count: count
-					});
-				}
-			})
-			.catch((err) => {
-				App.report(err);
-				res.status(500).end();
-			});
+			__latest: true
+		}))
+			.then(getResultPresenter(input, res))
+			.catch(getErrorPresenter(req, res, input));
 	};
 };
 
@@ -132,32 +129,14 @@ exports.get_listAndCount = function(input) {
 			populate = input.populate[input.ACTION_NAME];
 		}
 		thisModel.listAndCount(skip, size, sorter, filter, search, populate)
-			.then((result) => {
-				query.return.process(req, thisSchema, result.list);
-				if (input.beforeResponse &&
-					Object.prototype.hasOwnProperty.call(input.beforeResponse, input.ACTION_NAME) &&
-					typeof input.beforeResponse[input.ACTION_NAME] === 'function'
-				) {
-					result = input.beforeResponse[input.ACTION_NAME](result);
-				}
-				if (input.RESPONSE &&
-					Array.isArray(input.RESPONSE.full) &&
-					input.RESPONSE.full.indexOf(input.ACTION_NAME) > -1
-				) {
-					res.status(200).json({
-						status: 'ok',
-						result
-					});
-				} else {
-					res.status(200).json(result);
-				}
-			})
-			.catch((err) => {
-				App.report(err);
-				res.status(500).json({
-					status: 'error'
-				});
-			});
+			.then(getResultPresenter(input, res))
+			.catch(getErrorPresenter(req, res, input, {
+				size,
+				skip,
+				filter,
+				sorter,
+				populate
+			}));
 	};
 };
 
@@ -168,31 +147,8 @@ exports.get_create = function(input) {
 		data.__latest = true;
 		delete data._id;
 		thisModel.add(data)
-			.then((item) => {
-				if (input.beforeResponse &&
-					Object.prototype.hasOwnProperty.call(input.beforeResponse, input.ACTION_NAME) &&
-					typeof input.beforeResponse[input.ACTION_NAME] === 'function'
-				) {
-					item = input.beforeResponse[input.ACTION_NAME](item);
-				}
-				if (input.RESPONSE &&
-					Array.isArray(input.RESPONSE.full) &&
-					input.RESPONSE.full.indexOf(input.ACTION_NAME) > -1
-				) {
-					res.status(200).json({
-						status: 'ok',
-						result: item
-					});
-				} else {
-					res.status(200).json(item);
-				}
-			})
-			.catch((e) => {
-				App.report(e);
-				res.status(500).json({
-					status: 'error'
-				});
-			});
+			.then(getResultPresenter(input, res))
+			.catch(getErrorPresenter(req, res, input));
 	};
 };
 
@@ -201,36 +157,10 @@ exports.get_get = function(input) {
 		let id = req.params._id,
 			thisModel = notNode.Application.getModel(input.MODEL_NAME);
 		thisModel.getOne(id)
-			.then((item) => {
-				if (input.after && input.after[input.ACTION_NAME]) {
-					input.after[input.ACTION_NAME](item);
-				}
-				if (input.beforeResponse &&
-					Object.prototype.hasOwnProperty.call(input.beforeResponse, input.ACTION_NAME) &&
-					typeof input.beforeResponse[input.ACTION_NAME] === 'function'
-				) {
-					item = input.beforeResponse[input.ACTION_NAME](item);
-				}
-				if (input.RESPONSE &&
-					Array.isArray(input.RESPONSE.full) &&
-					input.RESPONSE.full.indexOf(input.ACTION_NAME) > -1
-				) {
-					res.status(200).json({
-						status: 'ok',
-						result: item
-					});
-				} else {
-					res.status(200).json(item);
-				}
-			})
-			.catch((err) => {
-				App.report(new notError('Error', {
-					id
-				}, err));
-				res.status(500).json({
-					status: 'error'
-				});
-			});
+			.then(getResultPresenter(input, res))
+			.catch(getErrorPresenter(req, res, input, {
+				id
+			}));
 	};
 };
 
@@ -245,24 +175,12 @@ exports.get_getById = function(input) {
 					variant.option = common.firstLetterToLower(input.MODEL_NAME);
 					variant.optionTitle = input.MODEL_TITLE;
 				}
-				if (input.RESPONSE &&
-					Array.isArray(input.RESPONSE.full) &&
-					input.RESPONSE.full.indexOf(input.ACTION_NAME) > -1
-				) {
-					res.status(200).json({
-						status: 'ok',
-						result: variant
-					});
-				} else {
-					res.status(200).json(variant);
-				}
+				return variant;
 			})
-			.catch((err) => {
-				App.report(err);
-				res.status(500).json({
-					status: 'error'
-				});
-			});
+			.then(getResultPresenter(input, res))
+			.catch(getErrorPresenter(req, res, input, {
+				id
+			}));
 	};
 };
 
@@ -271,29 +189,10 @@ exports.get_getRaw = function(input) {
 		let id = req.params._id,
 			thisModel = notNode.Application.getModel(input.MODEL_NAME);
 		thisModel.getOneRaw(id)
-			.then((item) => {
-				if (input.beforeResponse &&
-					Object.prototype.hasOwnProperty.call(input.beforeResponse, input.ACTION_NAME) &&
-					typeof input.beforeResponse[input.ACTION_NAME] === 'function'
-				) {
-					item = input.beforeResponse[input.ACTION_NAME](item);
-				}
-				if (input.RESPONSE &&
-					Array.isArray(input.RESPONSE.full) &&
-					input.RESPONSE.full.indexOf(input.ACTION_NAME) > -1
-				) {
-					res.status(200).json({
-						status: 'ok',
-						result: item
-					});
-				} else {
-					res.status(200).json(item);
-				}
-			})
-			.catch((err) => {
-				App.report(err);
-				res.status(500).json({});
-			});
+			.then(getResultPresenter(input, res))
+			.catch(getErrorPresenter(req, res, input, {
+				id
+			}));
 	};
 };
 
@@ -306,12 +205,12 @@ exports.get_update = function(input) {
 		delete req.body.__versions;
 		if (thisModelFile.enrich && thisModelFile.enrich.versioning) {
 			thisModel.findOneAndUpdate({
-						_id: id,
-						__latest: true,
-						__closed: false
-					},
-					thisModel.sanitizeInput(req.body)
-				).exec()
+				_id: id,
+				__latest: true,
+				__closed: false
+			},
+			thisModel.sanitizeInput(req.body)
+			).exec()
 				.then(thisModel.findById(id).exec())
 				.then((item) => {
 					if (typeof item !== 'undefined' && item !== null) {
@@ -323,58 +222,20 @@ exports.get_update = function(input) {
 						});
 					}
 				})
-				.then((item) => {
-					if (input.beforeResponse &&
-						Object.prototype.hasOwnProperty.call(input.beforeResponse, input.ACTION_NAME) &&
-						typeof input.beforeResponse[input.ACTION_NAME] === 'function'
-					) {
-						item = input.beforeResponse[input.ACTION_NAME](item);
-					}
-					if (input.RESPONSE &&
-						Array.isArray(input.RESPONSE.full) &&
-						input.RESPONSE.full.indexOf(input.ACTION_NAME) > -1
-					) {
-						res.status(200).json({
-							status: 'ok',
-							result: item
-						});
-					} else {
-						res.status(200).json(item);
-					}
-				})
-				.catch((err) => {
-					App.report(err);
-					res.status(500).json({});
-				});
+				.then(getResultPresenter(input, res))
+				.catch(getErrorPresenter(req, res, input, {
+					id
+				}));
 		} else {
 			thisModel.findOneAndUpdate({
-						_id: id
-					},
-					thisModel.sanitizeInput(req.body)
-				).exec()
-				.then((item) => {
-					if (input.beforeResponse &&
-						Object.prototype.hasOwnProperty.call(input.beforeResponse, input.ACTION_NAME) &&
-						typeof input.beforeResponse[input.ACTION_NAME] === 'function'
-					) {
-						item = input.beforeResponse[input.ACTION_NAME](item);
-					}
-					if (input.RESPONSE &&
-						Array.isArray(input.RESPONSE.full) &&
-						input.RESPONSE.full.indexOf(input.ACTION_NAME) > -1
-					) {
-						res.status(200).json({
-							status: 'ok',
-							result: item
-						});
-					} else {
-						res.status(200).json(item);
-					}
-				})
-				.catch((err) => {
-					App.report(err);
-					res.status(500).json({});
-				});
+				_id: id
+			},
+			thisModel.sanitizeInput(req.body)
+			).exec()
+				.then(getResultPresenter(input, res))
+				.catch(getErrorPresenter(req, res, input, {
+					id
+				}));
 		}
 
 	};
@@ -387,46 +248,22 @@ exports.get_delete = function(input) {
 			thisModel = notNode.Application.getModel(input.MODEL_NAME);
 		if (thisModelFile.enrich && thisModelFile.enrich.versioning) {
 			thisModel.findOneAndUpdate({
-					_id: id,
-					__latest: true,
-					__closed: false
-				}, {
-					__closed: true
-				}).exec()
-				.then(() => {
-					if (input.RESPONSE &&
-						Array.isArray(input.RESPONSE.full) &&
-						input.RESPONSE.full.indexOf(input.ACTION_NAME) > -1
-					) {
-						res.status(200).json({
-							status: 'ok'
-						});
-					} else {
-						res.status(200).json({});
-					}
-				})
-				.catch((err) => {
-					App.report(err);
-					res.status(500).json({});
-				});
+				_id: id,
+				__latest: true,
+				__closed: false
+			}, {
+				__closed: true
+			}).exec()
+				.then(getResultPresenter(input, res))
+				.catch(getErrorPresenter(req, res, input, {
+					id
+				}));
 		} else {
 			thisModel.findByIdAndRemove(id).exec()
-				.then(() => {
-					if (input.RESPONSE &&
-						Array.isArray(input.RESPONSE.full) &&
-						input.RESPONSE.full.indexOf(input.ACTION_NAME) > -1
-					) {
-						res.status(200).json({
-							status: 'ok'
-						});
-					} else {
-						res.status(200).json({});
-					}
-				})
-				.catch((err) => {
-					App.report(err);
-					res.status(500).json({});
-				});
+				.then(getResultPresenter(input, res))
+				.catch(getErrorPresenter(req, res, input, {
+					id
+				}));
 		}
 	};
 };

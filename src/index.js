@@ -14,10 +14,8 @@ const App = require('not-node').Application;
 let withBefore = function(name, input, funct){
 	if(input.hasOwnProperty(BEFORE_ACTION) && input[BEFORE_ACTION].hasOwnProperty(name)){
 		return function(req, res, next){
-			input[BEFORE_ACTION][name]({name, input, req, res, next})
-				.then(()=>{
-					funct(req, res, next);
-				})
+			input[BEFORE_ACTION][name]({ name, input, req, res, next })
+				.then(() => funct(req, res, next))
 				.catch((err)=>{
 					let e = ((new notError(err.message)).adopt(err));
 					App.reporter.report(e);
