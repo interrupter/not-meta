@@ -2,21 +2,25 @@ const query = require('not-filter'),
 	notError = require('not-error').notError,
 	common = require('not-node').Common,
 	notNode = require('not-node'),
-	App = notNode.Application;
+	log = require('not-log')(module, 'Meta/Routes');
 
 async function postProcess({
 	beforeResponse,
 	ACTION_NAME
 }, result) {
-	if (beforeResponse &&
-		Object.prototype.hasOwnProperty.call(beforeResponse, ACTION_NAME) &&
-		typeof beforeResponse[ACTION_NAME] === 'function'
-	) {
-		if (beforeResponse[ACTION_NAME].constructor.name === 'AsyncFunction') {
-			result = await beforeResponse[ACTION_NAME](result);
-		} else {
-			result = beforeResponse[ACTION_NAME](result);
+	try{
+		if (beforeResponse &&
+			Object.prototype.hasOwnProperty.call(beforeResponse, ACTION_NAME) &&
+			typeof beforeResponse[ACTION_NAME] === 'function'
+		) {
+			if (beforeResponse[ACTION_NAME].constructor.name === 'AsyncFunction') {
+				result = await beforeResponse[ACTION_NAME](result);
+			} else {
+				result = beforeResponse[ACTION_NAME](result);
+			}
 		}
+	}catch(e){
+		log.error(e);
 	}
 	return result;
 }
@@ -43,8 +47,12 @@ function returnResults({
 
 function getResultPresenter(input, res) {
 	return async (result) => {
-		result = await postProcess(input, result);
-		returnResults(input, res, result);
+		try{
+			result = await postProcess(input, result);
+			returnResults(input, res, result);
+		}catch(e){
+			log.error(e);
+		}
 	};
 }
 
@@ -53,7 +61,7 @@ function getErrorPresenter(req, res, {
 	ACTION_NAME
 }, opts = {}) {
 	return (err) => {
-		App.report(
+		notNode.Application.report(
 			new notError(`meta-route for ${MODEL_NAME}.${ACTION_NAME}`, {
 				MODEL_NAME,
 				ACTION_NAME,
