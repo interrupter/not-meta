@@ -32,7 +32,7 @@ function returnResults({
 		if (typeof result !== 'undefined') {
 			msg.result = result;
 		}
-		res.status(200).json(result);
+		res.status(200).json(msg);
 	} else {
 		if (typeof result === 'undefined') {
 			result = {};
