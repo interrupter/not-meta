@@ -2,8 +2,10 @@ const NAME_PREFIX = 'get_';
 const BEFORE_ACTION = 'before';
 const Route = require('./meta/_route.js');
 const Model = require('./meta/_model.js');
-const notError = require('not-error').notError;
-const App = require('not-node').Application;
+const notNode = require('not-node');
+const {objHas} = notNode.Common;
+
+const OPTIONS_TO_FLAT = [BEFORE_ACTION, 'full', 'reportList', 'populate'];
 
 /**
 *	Если есть специфические действия перед обработчиком, то мы их запускаем первыми
@@ -12,19 +14,29 @@ const App = require('not-node').Application;
 *	@param	{function}	funct	обработчик возвращаемый фабрикой
 */
 let withBefore = function(name, input, funct){
-	if(input.hasOwnProperty(BEFORE_ACTION) && input[BEFORE_ACTION].hasOwnProperty(name)){
-		return function(req, res, next){
-			input[BEFORE_ACTION][name]({ name, input, req, res, next })
-				.then(() => funct(req, res, next))
-				.catch((err)=>{
-					let e = ((new notError(err.message)).adopt(err));
-					App.reporter.report(e);
-				});
+	if(objHas(input, BEFORE_ACTION)){
+		return async function(req, res, next, prepared){
+			await input[BEFORE_ACTION]({ name, input, req, res, next });
+			return await funct(req, res, next, prepared);
 		};
 	}else{
 		return funct;
 	}
 };
+
+function copyParamsForAction(name, params){
+	const result = {ACTION_NAME: name};
+	Object.keys(params).forEach((paramName)=>{
+		if(OPTIONS_TO_FLAT.includes(paramName)){
+			if(objHas(params[paramName], ACTION_NAME)){
+				result[paramName] = params[paramName][ACTION_NAME];
+			}
+		}else{
+			result[paramName] = params[paramName];
+		}
+	});
+	return result;
+}
 
 /**
 *   Массированная инициализация общих функций
@@ -37,19 +49,20 @@ let withBefore = function(name, input, funct){
 let extend = (src, dest, list, params = {}, prefix = '')=>{
 	if(src && dest && Array.isArray(list)){
 		for(let name of list){
-			let fac = src[NAME_PREFIX + name];
-			if((typeof fac!=='undefined') && (fac !== null)){
-				let paramsCopy = Object.assign({ACTION_NAME: name}, params);
-				dest[prefix + name] = withBefore(name, paramsCopy, fac(paramsCopy));
-			}
+			let paramsCopy = copyParamsForAction(name, params);
+			dest[prefix + name] = withBefore(
+				name,
+				paramsCopy,
+				src.getAction(paramsCopy)
+			);
 		}
 	}
 };
 
 module.exports = {
 	name: 'not-meta',
+	paths:{},
 	Route,
 	Model,
 	extend,
-	paths:{}
 };
