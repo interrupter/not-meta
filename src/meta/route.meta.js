@@ -103,7 +103,7 @@ module.exports = ({input, action}) => {
   //standart router action function
   const shortRouteAction = shortRoute({input, action});
   if(objHas(input, 'short')){
-    return shortRoute;
+    return shortRouteAction;
   }else{
     return wrap(input, shortRouteAction);
   }
