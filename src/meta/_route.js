@@ -4,7 +4,7 @@ const
 
 module.exports.getAction = (input)=>{
   try{
-    const name = input.ACTION_NAME.replaceAll(/[^A-z_\.]/g, '');
+    const name = input.ACTION_NAME.replace(/[^A-z_\.]/g, '');
     const action = require('./routes/' + name);
     return metaRoute({input, action});
   }catch(e){

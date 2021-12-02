@@ -28,8 +28,8 @@ function copyParamsForAction(name, params){
 	const result = {ACTION_NAME: name};
 	Object.keys(params).forEach((paramName)=>{
 		if(OPTIONS_TO_FLAT.includes(paramName)){
-			if(objHas(params[paramName], ACTION_NAME)){
-				result[paramName] = params[paramName][ACTION_NAME];
+			if(objHas(params[paramName], name)){
+				result[paramName] = params[paramName][name];
 			}
 		}else{
 			result[paramName] = params[paramName];

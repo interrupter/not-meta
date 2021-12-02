@@ -5,7 +5,7 @@ const  Log = require('not-log')(module, 'Meta/ModelStaticMethods');
 */
 module.exports.getAction = (input)=>{
   try{
-    const name = input.ACTION_NAME.replaceAll(/[^A-z_\.]/g, '');
+    const name = input.ACTION_NAME.replace(/[^A-z_\.]/g, '');
     const action = require('./models/' + name);
     return action({input, action});
   }catch(e){
