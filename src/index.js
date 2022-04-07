@@ -24,14 +24,20 @@ let withBefore = function(name, input, funct){
 };
 
 function copyParamsForAction(name, params){
-	const result = {ACTION_NAME: name};
+	const result = {ACTION_NAME: name, RESPONSE:{}};
 	Object.keys(params).forEach((paramName)=>{
 		if(OPTIONS_TO_FLAT.includes(paramName)){
 			if(objHas(params[paramName], name)){
 				result[paramName] = params[paramName][name];
 			}
 		}else{
-			result[paramName] = params[paramName];
+			if(params.RESPONSE && Array.isArray(params.RESPONSE.full)){
+				result.RESPONSE = {
+					full: params.RESPONSE.full.includes(name)
+				};
+			}else{
+				result[paramName] = params[paramName];
+			}
 		}
 	});
 	return result;
@@ -41,7 +47,7 @@ function copyParamsForAction(name, params){
 *   Массированная инициализация общих функций
 *   @param  {object}    src     источник
 *   @param  {object}    dest    назначение
-*   @param  {array}     list    список для переноса
+*   @param  {array}     list     список для переноса
 *   @param  {object}    params  объект с параметрами для инициализации
 *   @param  {string}    prefix  приставка перед названием метода в модуле роутера
 */
