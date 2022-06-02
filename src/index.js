@@ -24,14 +24,14 @@ let withBefore = function(name, input, funct){
 };
 
 function copyParamsForAction(name, params){
-	const result = {ACTION_NAME: name, RESPONSE:{}};
+	let result = {ACTION_NAME: name, RESPONSE:{}};
 	Object.keys(params).forEach((paramName)=>{
 		if(OPTIONS_TO_FLAT.includes(paramName)){
 			if(objHas(params[paramName], name)){
 				result[paramName] = params[paramName][name];
 			}
 		}else{
-			if(params.RESPONSE && Array.isArray(params.RESPONSE.full)){
+			if(paramName === 'RESPONSE' && params.RESPONSE && Array.isArray(params.RESPONSE.full)){
 				result.RESPONSE = {
 					full: params.RESPONSE.full.includes(name)
 				};
@@ -54,7 +54,7 @@ function copyParamsForAction(name, params){
 let extend = (src, dest, list, params = {}, prefix = '')=>{
 	if(src && dest && Array.isArray(list)){
 		for(let name of list){
-			let paramsCopy = copyParamsForAction(name, params);
+			const paramsCopy = copyParamsForAction(name, params);
 			dest[prefix + name] = withBefore(
 				name,
 				paramsCopy,
