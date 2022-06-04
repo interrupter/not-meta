@@ -14,7 +14,7 @@ module.exports = function({
   search,
   thisModel
 }) {
-  let populate = [''];
+  let populate = [];
   if (input.populate && Array.isArray(input.populate)) {
     populate = [...input.populate];
   }
